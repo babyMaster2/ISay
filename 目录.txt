@@ -1,0 +1,19 @@
+my_project/
+├── backend/
+│   ├── app/
+│   │   ├── __init__.py
+│   ├── ├── name.txt
+│   │   └── main.py
+│   └── __init__.py
+│
+├── database/
+│   ├── __init__.py
+│   └── redis_db.py
+├── spider/
+│   ├── scrapy.cfg
+│   └── spider/
+│       ├── __init__.py
+│       └── spiders/
+│           ├── __init__.py
+│           └── my_spider.py
+└── main.py

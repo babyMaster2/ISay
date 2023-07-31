@@ -8,5 +8,3 @@ redis_config = {
 }
 
 redis_db_yibu = aioredis.Redis(**redis_config)
-
-
