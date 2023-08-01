@@ -70,7 +70,7 @@ async def get_poetry_by_name(name):
     return {'name': name, 'value': value}
 
 
-@app.get('/create_md/{key}')
+@app.get('/create_md/{name}')
 async def create_md_file(name):
     value = await redis_db_yibu.get(name)
     if not value:
