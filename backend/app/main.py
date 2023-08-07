@@ -29,7 +29,7 @@ async def add_poetry(poetry_item: PoetryItem):
         name = await get_random_name()
         a = await redis_db_yibu.exists(name)
         if not a:
-            # 加await后添加成功 看来跟异步有关
+            # 加await后添加成功 看来跟异步有关  待研究
             await redis_db_yibu.set(name, poetry_item.model_dump_json())
             print(name)
             print(poetry_item.model_dump_json())
