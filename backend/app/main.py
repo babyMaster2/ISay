@@ -70,11 +70,22 @@ async def get_all_poetry():
     if size == 0:
         return {'message': 'Database is empty.'}
     keys = await redis_db_yibu.keys('*')
+    print(keys)
     values = await redis_db_yibu.mget(keys)
-    response = [{'name': key, 'value': value} for key, value in zip(keys, values)]
-
+    print(values)
+    response = []
+    for key, value in zip(keys, values):
+        key = key.decode('utf-8')
+        print(key)
+        value = value.decode('utf-8')
+        print(value)
+        response.append({'name': key, 'value': value})
+    print(response)
     return response
+
+
 @app.get('/poetry/name/get')
+# 有一个在redis按中文存的 反而导致我解码错误，运行失败，反而编码都是gbk的，如‘涓嶆厡涓嶅繖’可以正常
 async def get_poetry_by_name(name):
     pipeline = redis_db_yibu.pipeline()
     pipeline.get(name)
