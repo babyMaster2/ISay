@@ -1,10 +1,13 @@
 import random
+
 import aiofiles
 from fastapi import FastAPI, HTTPException
-from database.redis_db import redis_db_yibu
 from pydantic import BaseModel
 
+from src.redis_client import async_redis_client
+
 app = FastAPI()
+redis_db_yibu = async_redis_client.client
 
 
 class PoetryItem(BaseModel):
@@ -83,7 +86,7 @@ async def get_all_poetry():
     print(response)
     return response
 
-
+"http://git.rccchina.com/bid/spider_selenium_python.git"
 @app.get('/poetry/name/get')
 # 有一个在redis按中文存的 反而导致我解码错误，运行失败，反而编码都是gbk的，如‘涓嶆厡涓嶅繖’可以正常
 async def get_poetry_by_name(name):
@@ -100,7 +103,7 @@ async def get_poetry_by_name(name):
 async def create_md_file(name):
     value = redis_db_yibu.get(name)
     if not value:
-        raise HTTPException(status_code=404, detail='Key does not exist in the database.')
+        raise HTTPException(status_code=404, detail='Key does not exist in the config.')
 
     filename = f'Md/{name}.md'
     with open(filename, 'w', encoding='utf-8') as f:
