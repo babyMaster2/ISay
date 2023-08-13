@@ -4,7 +4,7 @@ import aiofiles
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-from src.redis_client import async_redis_client
+from src.async_redis_client import async_redis_client
 
 app = FastAPI()
 redis_db_yibu = async_redis_client.client
