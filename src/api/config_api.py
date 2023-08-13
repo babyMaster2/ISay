@@ -1,4 +1,3 @@
-from tools import get_random_name
 from typing import List, Union
 
 from fastapi import APIRouter, Query
@@ -28,7 +27,7 @@ async def add_isay(
         name = get_random_name()
         max_attempts -= 1
     async_redis_client.hset(key=name, type=isay.isay_type, source=isay.isay_from, content=isay.isay_content, description=isay.isay_description)
-    return f'add {name} success, value is {isay}'
+    return f'add {name} success,value is {isay}'
 
 
 @isay_route.get(
