@@ -17,6 +17,6 @@ async_redis_client = AsyncRedisClient(
     env_config["redis"]["port"],
     env_config["redis"]["db"],
     env_config["redis"]["password"],
-)
+).client
 
 
