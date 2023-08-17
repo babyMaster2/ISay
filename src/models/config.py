@@ -15,53 +15,29 @@ class EnumType(str, Enum):
     other = "other"
 
 
-class EnumSource(str, Enum):
-    """
-    数据来源
-    : author: 作者
-    : book: 书籍
-    : other: 其他
-    """
-    author = "author"
-    book = "book"
-    other = "other"
-
-
-class EnumContent(str, Enum):
-    """
-    数据内容
-    """
-    content = "content"
-
-
-class EnumDescription(str, Enum):
-    """
-    数据描述
-    : description: 描述
-    : translation: 翻译
-    """
-    description = "description"
-    translation = "translation"
-
-
 class IsayConfig(BaseModel):
     isay_name: str
+    is_show: bool = Field(
+        title="是否被一言调用",
+        default=int(True),
+        description="是否展示",
+    )
     isay_type: EnumType = Field(
         title="数据类型",
         default=...,  # default=..., 代表必填
-        description="数据的类型，将决定数据是仅存储还是会被调用到一言",
+        description="数据的类型",
     )
-    isay_from: EnumSource = Field(
+    isay_from: str = Field(
         title="数据来源",
-        default='other',
+        default='i don\'t know',
     )
-    isay_content: EnumContent = Field(
+    isay_content: str = Field(
         title="数据内容",
         default=...,
     )
-    isay_description: EnumDescription = Field(
+    isay_description: str = Field(
         title="数据描述",
-        default=None,
+        default='no description',
         description="数据的描述,可能是注释，解读，翻译等",
     )
 
