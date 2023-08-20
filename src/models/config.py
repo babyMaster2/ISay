@@ -16,26 +16,26 @@ class EnumType(str, Enum):
 
 
 class IsayConfig(BaseModel):
-    isay_name: str
-    is_show: bool = Field(
+    name: str
+    is_show: str = Field(
         title="是否被一言调用",
-        default=int(True),
+        default='True',
         description="是否展示",
     )
-    isay_type: EnumType = Field(
+    type: EnumType = Field(
         title="数据类型",
         default=...,  # default=..., 代表必填
         description="数据的类型",
     )
-    isay_from: str = Field(
+    source: str = Field(
         title="数据来源",
-        default='i don\'t know',
+        default='i don‘t know',
     )
-    isay_content: str = Field(
+    content: str = Field(
         title="数据内容",
         default=...,
     )
-    isay_description: str = Field(
+    description: str = Field(
         title="数据描述",
         default='no description',
         description="数据的描述,可能是注释，解读，翻译等",
