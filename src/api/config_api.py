@@ -1,8 +1,7 @@
 from typing import List, Union
 
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query
 
-from src.api.tools import get_random_name
 from src.async_redis_client import async_redis_client
 from src.models.config import IsayConfig
 
@@ -15,43 +14,33 @@ isay_route = APIRouter()
 
 
 @isay_route.post(
-    "/add", summary="添加isay", response_model=IsayConfig
+    "/add", summary="添加isay", response_model=Union[IsayConfig, str]
 )
 async def add_isay(
         isay: IsayConfig,
-        name: str = None,
 ):
     """
     添加isay
     """
     mapping = {
         'is_show': isay.is_show,
-        'type': isay.isay_type,
-        'source': isay.isay_from,
-        'content': isay.isay_content,
-        'description': isay.isay_description
+        'type': isay.type,
+        'source': isay.source,
+        'content': isay.content,
+        'description': isay.description
         }
-    max_attempts = 5
-    attempt = 0
-    if name:
-        name_exit = await async_redis_client.exists(name)
-        if name_exit:
-            raise HTTPException(status_code=400, detail='Failed to add. Name existed.')
-        await async_redis_client.hset(name=name, mapping=mapping)
-        return f'add {name} success, value is {isay}'
-    elif not name:
-        while attempt < max_attempts:
-            name = await get_random_name()
-            name_exit = await async_redis_client.exists(name)
-            if not name_exit:
-                await async_redis_client.hset(name=name, mapping=mapping)
-                return f'add {name} success, value is {isay}'
-            attempt += 1
-        raise HTTPException(status_code=400, detail='Failed to add. Name existed and i have try 5 次.')
+
+    name_exit = await async_redis_client.exists(isay.name)
+    if name_exit:
+        return f"The name:'{isay.name}' exit"
+    await async_redis_client.hset(name=isay.name, mapping=mapping)
+    print(isay)
+    print(isay.model_dump())
+    return isay.model_dump()
 
 
 @isay_route.post(
-    "/add_batch", summary="批量添加isay", response_model=IsayConfig
+    "/add_batch", summary="批量添加isay", response_model=List[Union[IsayConfig, str]]
 )
 async def add_isay_batch(
         isay_list: List[IsayConfig],
@@ -61,89 +50,96 @@ async def add_isay_batch(
     """
     result_list = []
     for isay in isay_list:
-        try:
-            result = await add_isay(isay=isay, name=isay.isay_name)
-            result_list.append(result)
-        except Exception as e:
-            result_list.append(e)
+        result = await add_isay(isay=isay)
+        result_list.append(result)
     return result_list
+
+
 @isay_route.get(
-    "/get_all_keys", summary="获取所有键", response_model=Union[IsayConfig, None, str]
+    "/get_all_keys", summary="获取所有键", response_model=List
 )
 async def get_keys():
     keys = await async_redis_client.keys('*')
+    # 这里在fastapi的docs展示会自动解码，但是在这里实际的keys，需要手动解码，所以下面的解码是为了在本地测试时能看到正确的结果
     keys = [key.decode() for key in keys]
     return keys
 
 
 @isay_route.get(
-    "/get_all_", summary="获取所有内容", response_model=Union[IsayConfig, None, str]
-)
-async def get_isays():
-    keys = await get_keys()
-    values = []
-    for key in keys:
-        value = await get_isay_by_name(key)
-        values.append(value)
-    return values
-
-
-
-@isay_route.get(
-    "/get_by_name", summary="根据isay_name获取内容", response_model=Union[IsayConfig, None, str]
+    "/get_by_name", summary="根据name获取内容", response_model=Union[IsayConfig, None, str]
 )
 async def get_isay_by_name(
-        isay_name: str = Query(),
+        name: str = Query(),
 ):
-    key = isay_name
     # 获取的是包含字节字符串的字典
-    value = await async_redis_client.hgetall(key)
-    decoded_value = {k.decode(): v.decode() for k, v in value.items()}
-    return decoded_value
+    value = await async_redis_client.hgetall(name)
+    if not value:
+        return f"The name'{name}' not exit"
+    isay = {'name': name}
+    # # 同理上面，这里解码也是为了在本地测试时能看到正确的结果
+    for key, value in value.items():
+        isay[key.decode()] = value.decode()
+    try:
+        return IsayConfig(**isay)
+    except Exception:
+        return f"The name:'{name}'的内容不是isay格式"
 
 
 @isay_route.get(
-    "/get_by_keywords", summary="根据关键字获取列表", response_model=List[Union[IsayConfig, None, str]]
+    "/get_by_keywords", summary="根据关键字获取列表", response_model=Union[List, None, str]
 )
 async def get_isays_by_keywords(
         keywords: str = Query(),
 ):
+    isays = await get_isays()
+    result = []
+    for isay in isays:
+        if isinstance(isay, IsayConfig):
+            for key, value in isay.model_dump().items():
+                if keywords in value:
+                    result.append(isay)
+                    break
+    return result
+
+
+@isay_route.get(
+    "/get_all_", summary="获取所有内容", response_model=Union[List, None, str]
+)
+async def get_isays():
     keys = await get_keys()
-    values = []
+    isays = []
     for key in keys:
         value = await get_isay_by_name(key)
-        for item in value.values():
-            if keywords in item:
-                values.append({key: value})
-    return values
+        isays.append(value)
+    return isays
 
 
 @isay_route.post(
-    "/update", summary="更新isay", response_model=IsayConfig
+    "/update", summary="更新isay", response_model=Union[IsayConfig, str]
 )
 async def update_isay(
-        name: str,
-        poem: IsayConfig,
+        isay: IsayConfig,
 ):
     """
     更新isay
     """
+    name = isay.name
     name_exit = await async_redis_client.exists(name)
     if not name_exit:
-        return f'{name} not exit'
+        return f"The name:'{name}' not exit"
     mapping = {
-        'is_show': poem.is_show,
-        'type': poem.isay_type,
-        'source': poem.isay_from,
-        'content': poem.isay_content,
-        'description': poem.isay_description
+        'is_show': isay.is_show,
+        'type': isay.type,
+        'source': isay.source,
+        'content': isay.content,
+        'description': isay.description
         }
     await async_redis_client.hset(name=name, mapping=mapping)
-    return f'update {name} success, value is {poem}'
+    return isay.model_dump()
 
 
 @isay_route.post(
-    "/delete_by_name", summary="通过is_name删除isay", response_model=IsayConfig
+    "/delete_by_name", summary="通过name删除isay", response_model=str
 )
 async def delete_isay(
         name: str = Query(),
@@ -153,13 +149,14 @@ async def delete_isay(
     """
     name_exit = await async_redis_client.exists(name)
     if not name_exit:
-        return f'{name} not exit'
+        return f"The name:'{name}' not exit"
+    value = await get_isay_by_name(name)
     await async_redis_client.delete(name)
-    return f'delete {name} success'
+    return f"delete name:'{name} 'success,value is {value}"
 
 
 @isay_route.post(
-    "/delete_by_keywords", summary="通过关键字删除isay", response_model=IsayConfig
+    "/delete_by_keywords", summary="通过关键字删除isay", response_model=List
 )
 async def delete_isay_by_keywords(
         keywords: str = Query(),
@@ -168,9 +165,7 @@ async def delete_isay_by_keywords(
     根据关键字删除isay
     """
     values = await get_isays_by_keywords(keywords)
-    delete_list = []
+    result = []
     for value in values:
-        for key in value.keys():
-            await async_redis_client.delete(key)
-            delete_list.append({key: value})
-    return f'delete {delete_list} success'
+        result.append(await delete_isay(value.name))
+    return result
