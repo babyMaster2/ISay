@@ -1,5 +1,5 @@
 # ISay
-
+使用FastAPI，连接redis来实现对制定结构数据的增删查改及调用
 # Must Read
 
 ## 采用技术
