@@ -17,9 +17,9 @@ class EnumType(str, Enum):
 
 class IsayConfig(BaseModel):
     name: str
-    is_show: str = Field(
-        title="是否被一言调用",
-        default='True',
+    is_show: int = Field(
+        title="是否被一言调用,1为展示,0为不展示",
+        default=1,
         description="是否展示",
     )
     type: EnumType = Field(
