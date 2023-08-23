@@ -1,3 +1,4 @@
+import random
 from typing import List, Union
 
 from fastapi import APIRouter, Query
@@ -71,6 +72,8 @@ async def get_keys():
 async def get_isay_by_name(
         name: str = Query(),
 ):
+    if not name:
+        return f"No name,what are you doing?"
     # 获取的是包含字节字符串的字典
     value = await async_redis_client.hgetall(name)
     if not value:
@@ -169,3 +172,23 @@ async def delete_isay_by_keywords(
     for value in values:
         result.append(await delete_isay(value.name))
     return result
+
+
+@isay_route.get(
+    "/get_random", summary="随机获取isay", response_model=Union[IsayConfig, None, str]
+)
+async def get_random_isay():
+    max_attempts = 5
+
+    keys = await get_keys()
+
+    for _ in range(max_attempts):
+        name = random.choice(keys)
+        isay = await get_isay_by_name(name)
+
+        if isay.is_show == 1:
+            return isay
+
+    return "没有可展示的isay"
+
+
